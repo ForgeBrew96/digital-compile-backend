@@ -2,27 +2,12 @@ from auth_middleware import token_required
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
 import jwt
 import bcrypt
 import psycopg2, psycopg2.extras
+import os
 import json
-
-def get_db_connection():
-    if 'ON_HEROKU' in os.environ:
-        connection = psycopg2.connect(
-            os.getenv('DATABASE_URL'), 
-            sslmode='require'
-        )
-    else:
-        connection = psycopg2.connect(
-            host='localhost',
-            database=os.getenv('POSTGRES_DATABASE'),
-            user=os.getenv('POSTGRES_USERNAME'),
-            password=os.getenv('POSTGRES_PASSWORD')
-        )
-    return connection
-
+from db_helpers import get_db_connection
 
 load_dotenv()
 app = Flask(__name__)
