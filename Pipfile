@@ -10,7 +10,6 @@ psycopg2-binary = "*"
 bcrypt = "*"
 pyjwt = "*"
 gunicorn = "*"
-flask-dotenv ="*"
 
 [dev-packages]
 
