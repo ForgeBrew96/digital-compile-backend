@@ -9,13 +9,20 @@ import psycopg2, psycopg2.extras
 import json
 
 def get_db_connection():
-  connection = psycopg2.connect(
-    host='localhost',
-    database='compile_db',
-    user=os.environ['POSTGRES_USER'],
-    password=os.environ['POSTGRES_PASSWORD']
-  )
-  return connection
+    if 'ON_HEROKU' in os.environ:
+        connection = psycopg2.connect(
+            os.getenv('DATABASE_URL'), 
+            sslmode='require'
+        )
+    else:
+        connection = psycopg2.connect(
+            host='localhost',
+            database=os.getenv('POSTGRES_DATABASE'),
+            user=os.getenv('POSTGRES_USERNAME'),
+            password=os.getenv('POSTGRES_PASSWORD')
+        )
+    return connection
+
 
 load_dotenv()
 app = Flask(__name__)
@@ -57,6 +64,35 @@ def create_protocol():
         print("Error:", e) 
         return str(e), 500
 
+@app.route('/protocols/<protocol_id>', methods=['PUT'])
+def update_protocol(protocol_id):
+    try:
+        data = request.json
+
+        connection = get_db_connection()
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Check if protocol exists
+        cursor.execute("SELECT * FROM protocols WHERE protocol_id = %s", (protocol_id,))
+        if cursor.fetchone() is None:
+            connection.close()
+            return jsonify({"error": "Protocol Not Found"}), 404
+
+        # Update protocol
+        cursor.execute("""
+            UPDATE protocols 
+            SET img_url = %s
+            WHERE protocol_id = %s 
+            RETURNING *
+        """, (data['img_url'], protocol_id))
+        
+        updated_protocol = cursor.fetchone()
+        connection.commit()
+        connection.close()
+        return jsonify(updated_protocol), 202
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/protocols/<protocol_id>', methods=['DELETE'])
 def delete_protocol(protocol_id):
     try:
@@ -77,7 +113,8 @@ def index_cards():
   try:
     connection = get_db_connection()
     cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("SELECT * FROM cards;")
+    query = """SELECT cards.*, protocols.img_url FROM cards JOIN protocols ON cards.protocol_id = protocols.protocol_id;"""
+    cursor.execute(query)
     cards = cursor.fetchall()
     connection.close()
     return cards
@@ -254,4 +291,6 @@ def signin():
 def vip_lounge():
     return f"Welcome to the party, {g.user['username']}"
 
-app.run()
+if __name__ == '__main__':
+    app.run()
+
