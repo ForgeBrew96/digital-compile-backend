@@ -10,6 +10,7 @@ psycopg2-binary = "*"
 bcrypt = "*"
 pyjwt = "*"
 gunicorn = "*"
+flask-cors = "*"
 
 [dev-packages]
 
