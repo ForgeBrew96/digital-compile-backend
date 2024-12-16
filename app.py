@@ -292,5 +292,7 @@ def vip_lounge():
     return f"Welcome to the party, {g.user['username']}"
 
 if __name__ == '__main__':
-    app.run()
+    port = int(os.environ.get('PORT', 5432))
+    app.run(host='0.0.0.0', port=port)
+
 
